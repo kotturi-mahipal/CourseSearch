@@ -1,7 +1,9 @@
 package org.undoschool.coursesearch.service;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -16,6 +18,8 @@ import java.time.LocalDateTime;
  */
 @Data
 @Builder
+@NoArgsConstructor  // FIX: Required for Spring MVC binding
+@AllArgsConstructor // FIX: Required for @Builder to work with @NoArgsConstructor
 public class SearchCriteria {
     private String query;           // Full-text search term
     private String category;        // Exact category filter
@@ -24,7 +28,7 @@ public class SearchCriteria {
     private Integer maxAge;
     private Double minPrice;        // Price range filters
     private Double maxPrice;
-    private LocalDateTime startDate;    // Show courses on/after this date (changed to LocalDate)
+    private LocalDateTime startDate;    // Show courses on/after this date
     private String sort;            // Sort option: upcoming, priceAsc, priceDesc
     private int page;               // Pagination
     private int size;

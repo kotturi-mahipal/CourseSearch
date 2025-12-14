@@ -9,10 +9,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.stereotype.Service;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.IndexOperations;
 import org.springframework.data.elasticsearch.core.document.Document;
+import org.springframework.data.elasticsearch.core.suggest.Completion;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.List;
@@ -34,16 +35,13 @@ public class DataLoaderService {
             try {
                 // Ensure index exists with mappings derived from entity
                 IndexOperations indexOps = elasticsearchOperations.indexOps(org.undoschool.coursesearch.document.CourseDocument.class);
+
+                // Always put mapping to ensure 'suggest' field is configured correctly as Completion type
                 if (!indexOps.exists()) {
-                    boolean created = indexOps.create();
-                    if (created) {
-                        Document mapping = indexOps.createMapping(org.undoschool.coursesearch.document.CourseDocument.class);
-                        indexOps.putMapping(mapping);
-                        log.info("Created Elasticsearch index 'courses' with mappings");
-                    } else {
-                        log.warn("Failed to create index 'courses' or it already exists");
-                    }
+                    indexOps.create();
+                    log.info("Created Elasticsearch index 'courses'");
                 }
+                indexOps.putMapping(indexOps.createMapping(CourseDocument.class));
 
                 // Check if data already exists
                 long existingCount = courseRepository.count();
@@ -60,6 +58,13 @@ public class DataLoaderService {
                         resource.getInputStream(),
                         new TypeReference<List<CourseDocument>>() {}
                 );
+
+                // Feature: Populate the 'suggest' completion field based on title
+                courses.forEach(course -> {
+                    if (course.getTitle() != null) {
+                        course.setSuggest(new Completion(new String[]{course.getTitle()}));
+                    }
+                });
 
                 // Bulk save to Elasticsearch
                 List<CourseDocument> savedCourses = (List<CourseDocument>) courseRepository.saveAll(courses);

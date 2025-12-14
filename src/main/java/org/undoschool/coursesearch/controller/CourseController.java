@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -28,6 +29,17 @@ public class CourseController {
     public ResponseEntity<SearchResult> searchCourses(@ModelAttribute SearchCriteria criteria) {
         SearchResult result = searchService.searchCourses(criteria);
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Assignment B: Autocomplete Suggestion Endpoint
+     * GET /api/search/suggest?q={partialTitle}
+     */
+    @GetMapping("/search/suggest")
+    public ResponseEntity<List<String>> suggestCourses(@RequestParam String q) {
+        log.info("Suggestion request - q: {}", q);
+        List<String> suggestions = searchService.suggestCourses(q);
+        return ResponseEntity.ok(suggestions);
     }
 
     /**

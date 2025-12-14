@@ -2,7 +2,6 @@ package org.undoschool.coursesearch.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.undoschool.coursesearch.document.CourseDocument;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -14,7 +13,13 @@ import org.springframework.data.elasticsearch.core.query.Criteria;
 import org.springframework.data.elasticsearch.core.query.CriteriaQuery;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.undoschool.coursesearch.document.CourseDocument;
 
+import co.elastic.clients.elasticsearch.core.search.FieldSuggester;
+import co.elastic.clients.elasticsearch.core.search.Suggester;
+
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -63,6 +68,49 @@ public class CourseSearchService {
                 .build();
     }
 
+    /**
+     * Feature: Autocomplete suggestions
+     */
+    public List<String> suggestCourses(String prefix) {
+        if (!StringUtils.hasText(prefix)) {
+            return Collections.emptyList();
+        }
+
+        // Build the Suggester
+        Suggester suggester = Suggester.of(s -> s
+                .suggesters("course-suggestion", FieldSuggester.of(fs -> fs
+                        .prefix(prefix)
+                        .completion(c -> c
+                                .field("suggest")
+                                .skipDuplicates(true)
+                                .size(10)
+                        )
+                ))
+        );
+
+        NativeQuery query = NativeQuery.builder()
+                .withSuggester(suggester)
+                .build();
+
+        SearchHits<CourseDocument> searchHits = elasticsearchOperations.search(query, CourseDocument.class);
+
+        // Extract suggestions from response
+        var suggestions = searchHits.getSuggest();
+        if (suggestions == null) {
+            return Collections.emptyList();
+        }
+
+        List<String> result = new ArrayList<>();
+        suggestions.getSuggestion("course-suggestion").getEntries().forEach(entry -> {
+            entry.getOptions().forEach(option -> {
+                result.add(option.getText());
+            });
+        });
+
+        return result;
+    }
+
+    // ... (Existing private helper methods buildSpringDataQuery, buildContainsFallbackQuery, etc. remain unchanged) ...
     private org.springframework.data.elasticsearch.core.query.Query buildSpringDataQuery(SearchCriteria criteria, Pageable pageable) {
         Criteria root = new Criteria();
 
