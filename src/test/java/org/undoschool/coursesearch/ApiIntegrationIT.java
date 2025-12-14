@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class ApiIntegrationTests {
+class ApiIntegrationIT {
 
 	@LocalServerPort
 	private int port;

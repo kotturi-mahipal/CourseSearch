@@ -18,7 +18,9 @@ class TestcontainersConfiguration {
     @ServiceConnection
     @Conditional(DockerAvailableCondition.class)
     ElasticsearchContainer elasticsearchContainer() {
-        return new ElasticsearchContainer(DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch:8.11.1"));
+        return new ElasticsearchContainer(DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch:8.19.8"))
+                .withEnv("xpack.security.enabled", "false")
+                .withEnv("xpack.security.enrollment.enabled", "false");
     }
 
     static class DockerAvailableCondition implements Condition {
